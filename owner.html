@@ -573,7 +573,7 @@
         </div>
         <div class="card-actions ${o.status !== 'pending' ? 'single' : ''}">
           ${o.status === 'pending' ? `
-            <button class="btn btn-accept" onclick="acceptOrder('${o.orderId}','${o.phone}','${o.name}',`${o.items}`,'${o.total}')">✓ Accept</button>
+            <button class="btn btn-accept" id="ab_${o.orderId}" onclick="acceptOrder('${o.orderId}','${o.phone}','${o.name}','${o.total}')">✓ Accept</button>
             <button class="btn btn-reject" onclick="rejectOrder('${o.orderId}')">✕ Reject</button>
           ` : ''}
           ${o.status === 'accepted' ? `<div class="done-msg accepted">✅ Order Accepted</div>` : ''}
@@ -583,10 +583,13 @@
   }
 
   // ── ACTIONS ───────────────────────────────────────────────
-  async function acceptOrder(orderId, phone, name, items, total) {
+  async function acceptOrder(orderId, phone, name, total) {
     if (!confirm('Accept this order?')) return;
     try {
       await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'updateOrderStatus', orderId, status:'accepted'})});
+      // Get items from allOrders
+      const order = allOrders.find(o => o.orderId === orderId);
+      const items = order ? order.items : '';
       sendWhatsApp(phone, name, orderId, items, total);
       setTimeout(() => loadOrders(true), 500);
     } catch(e) { console.error(e); alert('Error accepting order.'); }
