@@ -298,6 +298,8 @@
       const data = await resp.json();
 
       if (data.result === 'success' && data.data) {
+        console.log('RAW DATA ROWS:', data.data.length - 1);
+        console.log('FIRST ROW SAMPLE:', JSON.stringify(data.data[1]));
         allOrders = data.data.slice(1).map(row => ({
           orderId:        row[0] || '',
           name:           row[1] || '',
@@ -314,6 +316,12 @@
         })).filter(o => o.orderId).reverse();
 
         applyDateFilter();
+        console.log('AFTER FILTER - displayOrders:', displayOrders.length, 'allOrders:', allOrders.length);
+        if(displayOrders.length === 0 && allOrders.length > 0) {
+          console.log('DATE FILTER ISSUE - sample order time:', allOrders[0].time);
+          console.log('Parsed date:', parseDate(allOrders[0].time));
+          console.log('Today:', new Date());
+        }
         updateStats();
         renderOrders();
       }
