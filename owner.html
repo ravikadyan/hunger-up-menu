@@ -323,24 +323,21 @@
     const div = document.createElement('div');
     div.className = 'notif-toast';
     div.id = id;
-    div.innerHTML = \`
-      <div class="notif-toast-icon">🔔</div>
-      <div class="notif-toast-body">
-        <div class="notif-toast-title">New Order — Table \${order.table}</div>
-        <div class="notif-toast-msg">\${order.name} • ₹\${order.total}<br>\${order.items.substring(0,40)}\${order.items.length>40?'...':''}</div>
-      </div>
-      <button class="notif-toast-close" onclick="document.getElementById('\${id}').remove()">✕</button>
-    \`;
+    const shortItems = order.items.length > 40 ? order.items.substring(0,40) + '...' : order.items;
+    div.innerHTML = '<div class="notif-toast-icon">\uD83D\uDD14</div>' +
+      '<div class="notif-toast-body">' +
+      '<div class="notif-toast-title">New Order \u2014 Table ' + order.table + '</div>' +
+      '<div class="notif-toast-msg">' + order.name + ' \u2022 \u20B9' + order.total + '<br>' + shortItems + '</div>' +
+      '</div>' +
+      '<button class="notif-toast-close" onclick="document.getElementById(\'' + id + '\').remove()">\u2715</button>';
     container.appendChild(div);
-    // Also show browser notification if permitted
     if (Notification.permission === 'granted') {
-      new Notification('🔔 New Order — Table ' + order.table, {
-        body: order.name + ' • ₹' + order.total,
+      new Notification('New Order - Table ' + order.table, {
+        body: order.name + ' - Rs.' + order.total,
         icon: '/favicon.ico'
       });
     }
-    // Auto remove after 8 seconds
-    setTimeout(() => { const el = document.getElementById(id); if(el) el.remove(); }, 8000);
+    setTimeout(function() { var el = document.getElementById(id); if(el) el.remove(); }, 8000);
   }
 
   function requestNotifPermission() {
@@ -576,7 +573,7 @@
         </div>
         <div class="card-actions ${o.status !== 'pending' ? 'single' : ''}">
           ${o.status === 'pending' ? `
-            <button class="btn btn-accept" onclick="acceptOrder('${o.orderId}','${o.phone}','${o.name}',\`${o.items}\`,'${o.total}')">✓ Accept</button>
+            <button class="btn btn-accept" onclick="acceptOrder('${o.orderId}','${o.phone}','${o.name}',`${o.items}`,'${o.total}')">✓ Accept</button>
             <button class="btn btn-reject" onclick="rejectOrder('${o.orderId}')">✕ Reject</button>
           ` : ''}
           ${o.status === 'accepted' ? `<div class="done-msg accepted">✅ Order Accepted</div>` : ''}
