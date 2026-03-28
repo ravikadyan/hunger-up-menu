@@ -317,11 +317,12 @@
 
         applyDateFilter();
         console.log('AFTER FILTER - displayOrders:', displayOrders.length, 'allOrders:', allOrders.length);
-        if(displayOrders.length === 0 && allOrders.length > 0) {
-          console.log('DATE FILTER ISSUE - sample order time:', allOrders[0].time);
-          console.log('Parsed date:', parseDate(allOrders[0].time));
-          console.log('Today:', new Date());
-        }
+        console.log('ALL ORDER DATES:');
+        allOrders.forEach((o,i) => {
+          const pd = parseDate(o.time);
+          const today = new Date(); today.setHours(0,0,0,0);
+          console.log(i, o.time, '-> parsed:', pd.toDateString(), '== today?', pd.toDateString() === today.toDateString());
+        });
         updateStats();
         renderOrders();
       }
