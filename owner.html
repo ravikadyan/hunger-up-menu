@@ -553,9 +553,23 @@
   // ── HELPERS ───────────────────────────────────────────────
   function parseDate(ts) {
     if (!ts) return new Date(0);
-    const p = ts.split(',')[0].trim().split('/');
-    const d = new Date(`${p[2]}-${String(p[1]).padStart(2,'0')}-${String(p[0]).padStart(2,'0')}`);
-    d.setHours(0,0,0,0); return d;
+    try {
+      // Format: dd/MM/yyyy, HH:mm:ss
+      const parts = ts.split(', ');
+      const dateParts = parts[0].trim().split('/');
+      const timeParts = parts[1] ? parts[1].split(':') : [0,0,0];
+      // Use local Date constructor to avoid UTC timezone shift
+      const d = new Date(
+        parseInt(dateParts[2]),
+        parseInt(dateParts[1]) - 1,
+        parseInt(dateParts[0]),
+        parseInt(timeParts[0]),
+        parseInt(timeParts[1]),
+        parseInt(timeParts[2])
+      );
+      d.setHours(0,0,0,0);
+      return d;
+    } catch(e) { return new Date(0); }
   }
   function isSameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
   function formatDate(d){const t=new Date();t.setHours(0,0,0,0);const y=new Date(t);y.setDate(y.getDate()-1);if(isSameDay(d,t))return'Today';if(isSameDay(d,y))return'Yesterday';return d.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
