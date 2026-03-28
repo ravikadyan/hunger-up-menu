@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunger Up - Owner Dashboard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --primary: #1A1A1A;
+      --accent: #F5C518;
+      --bg: #F5F5F5;
+      --card: #FFFFFF;
+      --text: #1A1A1A;
+      --text-light: #6B6B6B;
+      --border: #E0E0E0;
+      --success: #10B981;
+      --success-light: #D1FAE5;
+      --danger: #EF4444;
+      --danger-light: #FEE2E2;
+      --warning: #F59E0B;
+      --warning-light: #FEF3C7;
+      --info: #3B82F6;
+      --info-light: #DBEAFE;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+    /* LOGIN */
+    .login-screen { position: fixed; top:0;left:0;right:0;bottom:0; background: var(--primary); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+    .login-box { background: white; padding: 48px 40px; border-radius: 24px; text-align: center; max-width: 400px; width: 90%; box-shadow: 0 20px 60px rgba(0,0,0,0.3); }
+    .login-logo { font-family: 'Playfair Display', serif; font-size: 30px; color: var(--primary); margin-bottom: 4px; }
+    .login-sub { font-size: 13px; color: var(--accent); font-weight: 700; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; }
+    .login-subtitle { color: var(--text-light); font-size: 14px; margin-bottom: 28px; }
+    .pin-input { width: 100%; padding: 16px; border: 2px solid var(--border); border-radius: 12px; font-size: 24px; text-align: center; font-weight: 700; letter-spacing: 8px; margin-bottom: 16px; font-family: 'Courier New', monospace; }
+    .pin-input:focus { outline: none; border-color: var(--accent); }
+    .login-btn { width: 100%; padding: 16px; background: var(--primary); color: white; border: none; border-radius: 12px; font-size: 16px; font-weight: 700; cursor: pointer; transition: all .2s; }
+    .login-btn:hover { background: var(--accent); color: var(--primary); }
+    .error-msg { color: var(--danger); font-size: 13px; margin-top: 10px; display: none; }
+    .error-msg.show { display: block; }
+
+    /* HEADER */
+    .header { background: var(--primary); color: white; padding: 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 12px rgba(0,0,0,0.15); }
+    .header-content { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; }
+    .header-left h1 { font-family: 'Playfair Display', serif; font-size: 24px; color: var(--accent); }
+    .header-left .sub { font-size: 11px; color: rgba(255,255,255,0.5); letter-spacing: 1px; text-transform: uppercase; }
+    .header-stats { display: flex; gap: 20px; align-items: center; }
+    .stat-item { text-align: center; }
+    .stat-num { font-size: 22px; font-weight: 700; color: var(--accent); }
+    .stat-lbl { font-size: 10px; opacity: .6; text-transform: uppercase; letter-spacing: .5px; }
+    .refresh-btn { background: var(--accent); border: none; padding: 10px 18px; border-radius: 8px; color: var(--primary); font-weight: 700; cursor: pointer; font-size: 13px; transition: all .2s; }
+    .refresh-btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(245,197,24,.4); }
+
+    /* CONTROLS */
+    .controls { max-width: 1200px; margin: 20px auto; padding: 0 20px; }
+    .date-bar { background: white; padding: 18px; border-radius: 14px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border: 2px solid var(--border); box-shadow: 0 2px 8px rgba(0,0,0,.04); }
+    .date-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+    .date-btn { padding: 9px 16px; border-radius: 100px; border: 2px solid var(--border); background: white; color: var(--text-light); font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; }
+    .date-btn.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .date-btn:hover:not(.active) { border-color: var(--accent); color: var(--accent); }
+    .date-picker { padding: 9px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 13px; font-weight: 600; background: white; min-width: 160px; }
+    .date-picker:focus { outline: none; border-color: var(--accent); }
+    .search-box { display: flex; gap: 8px; flex: 1; max-width: 360px; }
+    .search-input { flex: 1; padding: 9px 14px; border: 2px solid var(--border); border-radius: 10px; font-size: 13px; font-family: 'Inter', sans-serif; }
+    .search-input:focus { outline: none; border-color: var(--accent); }
+    .search-btn { padding: 9px 16px; background: var(--accent); color: var(--primary); border: none; border-radius: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; font-size: 13px; }
+
+    /* DATE INFO */
+    .date-info { background: white; padding: 14px 18px; border-radius: 10px; margin-top: 12px; display: flex; justify-content: space-between; align-items: center; border: 2px solid var(--border); }
+    .di-left { display: flex; align-items: center; gap: 10px; }
+    .di-label { font-size: 17px; font-weight: 700; font-family: 'Playfair Display', serif; }
+    .di-badge { padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .di-badge.today { background: var(--success-light); color: var(--success); }
+    .di-badge.yesterday { background: var(--info-light); color: var(--info); }
+    .di-badge.archive { background: var(--warning-light); color: var(--warning); }
+    .di-stats { display: flex; gap: 20px; }
+    .di-stat { text-align: center; }
+    .di-stat-num { font-size: 18px; font-weight: 700; }
+    .di-stat-lbl { font-size: 10px; color: var(--text-light); text-transform: uppercase; }
+
+    /* FILTERS */
+    .filters { max-width: 1200px; margin: 14px auto 0; padding: 0 20px; display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; }
+    .filters::-webkit-scrollbar { display: none; }
+    .filter-chip { flex-shrink: 0; padding: 9px 18px; border-radius: 100px; border: 2px solid var(--border); background: white; font-size: 13px; font-weight: 600; cursor: pointer; transition: all .2s; white-space: nowrap; color: var(--text-light); }
+    .filter-chip.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .badge-count { display: inline-block; background: var(--accent); color: var(--primary); padding: 1px 7px; border-radius: 10px; font-size: 11px; margin-left: 6px; font-weight: 700; }
+
+    /* CONTAINER */
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px 20px 40px; }
+
+    /* LOADING / EMPTY */
+    .loading { text-align: center; padding: 40px; color: var(--text-light); }
+    .spinner { width: 38px; height: 38px; border: 4px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 12px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .empty { text-align: center; padding: 70px 20px; color: var(--text-light); }
+    .empty-icon { font-size: 56px; margin-bottom: 12px; opacity: .5; }
+    .empty h3 { font-size: 18px; color: var(--text); margin-bottom: 6px; }
+
+    /* APPROVAL SECTION */
+    .approval-section { margin-bottom: 28px; }
+    .approval-title { font-size: 20px; font-weight: 700; color: var(--warning); margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+
+    /* ORDERS GRID */
+    .orders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(360px, 1fr)); gap: 16px; margin-top: 16px; }
+
+    /* ORDER CARD */
+    .order-card { background: white; border-radius: 16px; padding: 18px; border: 2px solid var(--border); position: relative; overflow: hidden; animation: slideUp .25s ease-out; transition: all .2s; }
+    .order-card:hover { box-shadow: 0 6px 20px rgba(0,0,0,.07); transform: translateY(-3px); }
+    @keyframes slideUp { from { opacity:0; transform: translateY(12px); } to { opacity:1; transform: translateY(0); } }
+    .order-card::before { content:''; position: absolute; top:0;left:0;right:0; height:4px; background: var(--accent); }
+    .order-card.pending::before { background: var(--warning); }
+    .order-card.accepted::before { background: var(--info); }
+    .order-card.rejected::before { background: var(--danger); }
+    .order-card.ready::before { background: var(--success); }
+    .order-card.approval::before { background: var(--warning); }
+
+    .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; padding-bottom: 14px; border-bottom: 1.5px solid var(--accent); }
+    .card-id { font-size: 14px; font-weight: 700; color: var(--primary); }
+    .card-time { font-size: 11px; color: var(--text-light); margin-top: 3px; }
+    .table-badge { background: var(--accent); color: var(--primary); padding: 7px 14px; border-radius: 100px; font-size: 13px; font-weight: 700; }
+
+    .card-customer { background: var(--bg); padding: 10px 14px; border-radius: 10px; margin-bottom: 12px; }
+    .cust-name { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
+    .cust-phone { font-size: 12px; color: var(--text-light); display: flex; align-items: center; gap: 6px; }
+
+    .status-pill { display: inline-flex; align-items: center; gap: 5px; padding: 5px 12px; border-radius: 100px; font-size: 11px; font-weight: 700; text-transform: uppercase; margin-bottom: 12px; }
+    .status-pill.pending { background: var(--warning-light); color: var(--warning); }
+    .status-pill.accepted { background: var(--info-light); color: var(--info); }
+    .status-pill.rejected { background: var(--danger-light); color: var(--danger); }
+    .status-pill.ready { background: var(--success-light); color: var(--success); }
+
+    .card-items { margin-bottom: 12px; }
+    .items-label { font-size: 11px; font-weight: 600; color: var(--text-light); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; }
+    .items-list { background: var(--bg); padding: 10px 12px; border-radius: 10px; font-size: 13px; color: var(--text); line-height: 1.6; }
+
+    .card-total { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; background: var(--bg); border-radius: 10px; margin-bottom: 14px; }
+    .total-label { font-size: 13px; font-weight: 600; }
+    .total-amount { font-size: 22px; font-weight: 700; }
+
+    .card-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .card-actions.single { grid-template-columns: 1fr; }
+    .btn { padding: 12px 16px; border: none; border-radius: 10px; font-size: 13px; font-weight: 700; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 6px; transition: all .2s; font-family: 'Inter', sans-serif; }
+    .btn:hover { transform: translateY(-2px); }
+    .btn-accept { background: var(--success); color: white; }
+    .btn-accept:hover { background: #059669; }
+    .btn-reject { background: white; color: var(--danger); border: 2px solid var(--danger); }
+    .btn-reject:hover { background: var(--danger); color: white; }
+    .btn-approve { background: var(--success); color: white; }
+    .btn-block { background: var(--primary); color: white; }
+
+    .approval-warning { background: var(--warning-light); padding: 10px 12px; border-radius: 8px; margin-bottom: 12px; border-left: 4px solid var(--warning); font-size: 13px; color: #92400E; }
+
+    .done-msg { text-align: center; padding: 14px; font-weight: 600; font-size: 13px; }
+    .done-msg.accepted { color: var(--info); }
+    .done-msg.rejected { color: var(--danger); }
+
+    @media(max-width:768px) {
+      .orders-grid { grid-template-columns: 1fr; }
+      .header-stats { display: none; }
+      .date-bar { flex-direction: column; align-items: stretch; }
+      .search-box { max-width: 100%; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Hunger Up</div>
+    <div class="login-sub">Food Court & Dhaba</div>
+    <div class="login-subtitle">Owner Dashboard — Enter PIN</div>
+    <input type="password" class="pin-input" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric" onkeydown="if(event.key==='Enter') checkPIN()">
+    <button class="login-btn" onclick="checkPIN()">Access Dashboard</button>
+    <div class="error-msg" id="errorMsg">Incorrect PIN. Please try again.</div>
+  </div>
+</div>
+
+<!-- DASHBOARD -->
+<div id="dashboard" style="display:none;">
+
+  <div class="header">
+    <div class="header-content">
+      <div class="header-left">
+        <h1>Hunger Up</h1>
+        <div class="sub">Owner Dashboard</div>
+      </div>
+      <div class="header-stats">
+        <div class="stat-item">
+          <div class="stat-num" id="totalOrders">0</div>
+          <div class="stat-lbl">Orders</div>
+        </div>
+        <div class="stat-item">
+          <div class="stat-num" id="totalRevenue">₹0</div>
+          <div class="stat-lbl">Revenue</div>
+        </div>
+        <button class="refresh-btn" onclick="loadOrders()">🔄 Refresh</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls">
+    <div class="date-bar">
+      <div class="date-btns">
+        <button class="date-btn active" onclick="selectRange('today')" data-range="today">📅 Today</button>
+        <button class="date-btn" onclick="selectRange('yesterday')" data-range="yesterday">⏮️ Yesterday</button>
+        <button class="date-btn" onclick="selectRange('last7')" data-range="last7">📊 Last 7 Days</button>
+        <button class="date-btn" onclick="selectRange('last30')" data-range="last30">📈 Last 30 Days</button>
+      </div>
+      <input type="date" class="date-picker" id="datePicker" onchange="selectCustomDate()">
+      <div class="search-box">
+        <input type="text" class="search-input" id="searchInput" placeholder="Order ID or Phone">
+        <button class="search-btn" onclick="searchOrders()">🔍 Search</button>
+      </div>
+    </div>
+
+    <div class="date-info">
+      <div class="di-left">
+        <div class="di-label" id="diLabel">Today</div>
+        <div class="di-badge today" id="diBadge">Today</div>
+      </div>
+      <div class="di-stats">
+        <div class="di-stat">
+          <div class="di-stat-num" id="diOrders">0</div>
+          <div class="di-stat-lbl">Orders</div>
+        </div>
+        <div class="di-stat">
+          <div class="di-stat-num" id="diRevenue">₹0</div>
+          <div class="di-stat-lbl">Revenue</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="filters">
+    <button class="filter-chip active" onclick="filterOrders('all')" data-filter="all">All Orders <span class="badge-count" id="badge-all">0</span></button>
+    <button class="filter-chip" onclick="filterOrders('pending')" data-filter="pending">🟡 Pending <span class="badge-count" id="badge-pending">0</span></button>
+    <button class="filter-chip" onclick="filterOrders('accepted')" data-filter="accepted">✅ Accepted <span class="badge-count" id="badge-accepted">0</span></button>
+    <button class="filter-chip" onclick="filterOrders('rejected')" data-filter="rejected">❌ Rejected <span class="badge-count" id="badge-rejected">0</span></button>
+  </div>
+
+  <div class="container">
+    <div class="loading" id="loading"><div class="spinner"></div><div>Loading orders...</div></div>
+    <div class="empty" id="emptyState" style="display:none;">
+      <div class="empty-icon">📋</div>
+      <h3>No Orders Found</h3>
+      <p>No orders for the selected date range</p>
+    </div>
+
+    <!-- APPROVAL QUEUE -->
+    <div id="approvalSection" style="display:none;" class="approval-section">
+      <div class="approval-title">⚠️ Orders Needing Approval</div>
+      <div class="orders-grid" id="approvalGrid"></div>
+    </div>
+
+    <!-- NORMAL ORDERS -->
+    <div class="orders-grid" id="ordersGrid"></div>
+  </div>
+
+</div>
+
+<script>
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzy2ckG31u9P1iwl0O1c0WQ6gz2_1dDWUHEw3b7Q59PCXlRMTlqz4ifjjSmufjbd-f1QQ/exec';
+  const RESTAURANT_NAME = 'Hunger Up Food Court & Dhaba';
+  const PIN_CODE = '1234';
+
+  let allOrders = [];
+  let displayOrders = [];
+  let currentFilter = 'all';
+  let currentRange = 'today';
+  let selectedDate = null;
+  let autoRefreshInterval;
+
+  // ── PIN ───────────────────────────────────────────────────
+  function checkPIN() {
+    const pin = document.getElementById('pinInput').value;
+    if (pin === PIN_CODE) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('dashboard').style.display = 'block';
+      document.getElementById('datePicker').value = new Date().toISOString().split('T')[0];
+      loadOrders();
+      startAutoRefresh();
+    } else {
+      document.getElementById('errorMsg').classList.add('show');
+      document.getElementById('pinInput').value = '';
+    }
+  }
+
+  // ── LOAD ──────────────────────────────────────────────────
+  async function loadOrders(silent = false) {
+    try {
+      if (!silent) {
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('emptyState').style.display = 'none';
+        document.getElementById('ordersGrid').innerHTML = '';
+      }
+      const resp = await fetch(SHEET_URL);
+      const data = await resp.json();
+
+      if (data.result === 'success' && data.data) {
+        allOrders = data.data.slice(1).map(row => ({
+          orderId:        row[0] || '',
+          name:           row[1] || '',
+          phone:          row[2] || '',
+          table:          row[3] || '',
+          items:          row[4] || '',
+          total:          row[5] || 0,
+          time:           row[6] || '',
+          status:         row[7] || 'pending',
+          eta:            row[8] || '',
+          payment:        row[9] || 'cash',
+          approvalStatus: row[10] || 'auto',
+          orderCount:     row[11] || 1
+        })).filter(o => o.orderId).reverse();
+
+        applyDateFilter();
+        updateStats();
+        renderOrders();
+      }
+      if (!silent) document.getElementById('loading').style.display = 'none';
+    } catch(e) {
+      console.error(e);
+      if (!silent) document.getElementById('loading').style.display = 'none';
+    }
+  }
+
+  // ── DATE FILTER ───────────────────────────────────────────
+  function applyDateFilter() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const yesterday = new Date(today); yesterday.setDate(yesterday.getDate()-1);
+    const last7 = new Date(today); last7.setDate(last7.getDate()-6);
+    const last30 = new Date(today); last30.setDate(last30.getDate()-29);
+
+    displayOrders = allOrders.filter(o => {
+      const d = parseDate(o.time);
+      switch(currentRange) {
+        case 'today':     return isSameDay(d, today);
+        case 'yesterday': return isSameDay(d, yesterday);
+        case 'last7':     return d >= last7;
+        case 'last30':    return d >= last30;
+        case 'custom':    if (selectedDate) { const s=new Date(selectedDate);s.setHours(0,0,0,0);return isSameDay(d,s);} return true;
+        default: return true;
+      }
+    });
+
+    const labels = {today:['Today','today','Today'],yesterday:['Yesterday','yesterday','Yesterday'],last7:['Last 7 Days','archive','Last 7 Days'],last30:['Last 30 Days','archive','Last 30 Days']};
+    const l = labels[currentRange];
+    if (l) setDateLabel(l[0], l[1], l[2]);
+    else if (currentRange === 'custom' && selectedDate) {
+      const s = new Date(selectedDate); s.setHours(0,0,0,0);
+      setDateLabel(formatDate(s), getBadgeType(s), formatShort(s));
+    }
+  }
+
+  function selectRange(range) {
+    currentRange = range;
+    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-range="${range}"]`).classList.add('active');
+    applyDateFilter(); updateStats(); renderOrders();
+  }
+
+  function selectCustomDate() {
+    selectedDate = document.getElementById('datePicker').value;
+    currentRange = 'custom';
+    document.querySelectorAll('.date-btn').forEach(b => b.classList.remove('active'));
+    applyDateFilter(); updateStats(); renderOrders();
+  }
+
+  function setDateLabel(label, type, badge) {
+    document.getElementById('diLabel').textContent = label;
+    const el = document.getElementById('diBadge');
+    el.className = `di-badge ${type}`;
+    el.textContent = badge;
+  }
+
+  // ── SEARCH ────────────────────────────────────────────────
+  function searchOrders() {
+    const q = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!q) { applyDateFilter(); updateStats(); renderOrders(); return; }
+    displayOrders = allOrders.filter(o =>
+      o.orderId.toLowerCase().includes(q) ||
+      o.phone.toString().includes(q) ||
+      o.name.toLowerCase().includes(q)
+    );
+    updateStats(); renderOrders();
+  }
+
+  // ── STATS ─────────────────────────────────────────────────
+  function updateStats() {
+    const active = displayOrders.filter(o => o.status === 'accepted');
+    const total = displayOrders.length;
+    const rev = active.reduce((s,o) => s + parseFloat(o.total||0), 0);
+
+    document.getElementById('totalOrders').textContent = total;
+    document.getElementById('totalRevenue').textContent = '₹'+rev;
+    document.getElementById('diOrders').textContent = total;
+    document.getElementById('diRevenue').textContent = '₹'+rev;
+    document.getElementById('badge-all').textContent = total;
+    document.getElementById('badge-pending').textContent = displayOrders.filter(o=>o.status==='pending').length;
+    document.getElementById('badge-accepted').textContent = displayOrders.filter(o=>o.status==='accepted').length;
+    document.getElementById('badge-rejected').textContent = displayOrders.filter(o=>o.status==='rejected').length;
+  }
+
+  function filterOrders(filter) {
+    currentFilter = filter;
+    document.querySelectorAll('.filter-chip').forEach(b => b.classList.remove('active'));
+    document.querySelector(`[data-filter="${filter}"]`).classList.add('active');
+    renderOrders();
+  }
+
+  // ── RENDER ────────────────────────────────────────────────
+  function renderOrders() {
+    const grid = document.getElementById('ordersGrid');
+    const emptyState = document.getElementById('emptyState');
+    const approvalSection = document.getElementById('approvalSection');
+    const approvalGrid = document.getElementById('approvalGrid');
+
+    // Approval queue — always from allOrders
+    const needsApproval = allOrders.filter(o => o.status === 'pending_approval' && o.approvalStatus === 'pending');
+
+    if (needsApproval.length > 0) {
+      approvalSection.style.display = 'block';
+      approvalGrid.innerHTML = needsApproval.map(o => `
+        <div class="order-card approval">
+          <div class="card-header">
+            <div><div class="card-id">⚠️ ${o.orderId}</div><div class="card-time">🕐 ${o.time}</div></div>
+            <div class="table-badge">🪑 Table ${o.table}</div>
+          </div>
+          <div class="card-customer">
+            <div class="cust-name">👤 ${o.name}</div>
+            <div class="cust-phone">📱 ${o.phone}</div>
+          </div>
+          <div class="approval-warning">
+            🚨 Manual Approval Required<br>
+            <span style="font-size:12px;">This is the ${o.orderCount}th order from this table in the last 30 minutes.</span>
+          </div>
+          <div class="card-items">
+            <div class="items-label">Items Ordered</div>
+            <div class="items-list">${o.items}</div>
+          </div>
+          <div class="card-total">
+            <div class="total-label">Total Amount</div>
+            <div class="total-amount">₹${o.total}</div>
+          </div>
+          <div class="card-actions" style="grid-template-columns:1fr 1fr 1fr;">
+            <button class="btn btn-approve" onclick="approveOrder('${o.orderId}')">✓ Approve</button>
+            <button class="btn btn-reject" onclick="rejectApproval('${o.orderId}')">✗ Reject</button>
+            <button class="btn btn-block" onclick="blockPhone('${o.phone}')">🚫 Block</button>
+          </div>
+        </div>`).join('');
+    } else {
+      approvalSection.style.display = 'none';
+    }
+
+    // Normal orders
+    let filtered = displayOrders.filter(o => o.status !== 'pending_approval');
+    if (currentFilter !== 'all') {
+      filtered = filtered.filter(o => o.status === currentFilter);
+    }
+
+    if (filtered.length === 0) {
+      grid.innerHTML = '';
+      emptyState.style.display = 'block';
+      return;
+    }
+    emptyState.style.display = 'none';
+
+    grid.innerHTML = filtered.map(o => `
+      <div class="order-card ${o.status}">
+        <div class="card-header">
+          <div><div class="card-id">${o.orderId}</div><div class="card-time">🕐 ${o.time}</div></div>
+          <div class="table-badge">🪑 Table ${o.table}</div>
+        </div>
+        <div class="card-customer">
+          <div class="cust-name">👤 ${o.name}</div>
+          <div class="cust-phone">📱 ${o.phone}</div>
+        </div>
+        <div class="status-pill ${o.status}">
+          ${o.status==='pending'?'⏳ Pending':''}
+          ${o.status==='accepted'?'✅ Accepted':''}
+          ${o.status==='rejected'?'❌ Rejected':''}
+        </div>
+        <div class="card-items">
+          <div class="items-label">Items Ordered</div>
+          <div class="items-list">${o.items}</div>
+        </div>
+        <div class="card-total">
+          <div class="total-label">Total Amount</div>
+          <div class="total-amount">₹${o.total}</div>
+        </div>
+        <div class="card-actions ${o.status !== 'pending' ? 'single' : ''}">
+          ${o.status === 'pending' ? `
+            <button class="btn btn-accept" onclick="acceptOrder('${o.orderId}','${o.phone}','${o.name}',\`${o.items}\`,'${o.total}')">✓ Accept</button>
+            <button class="btn btn-reject" onclick="rejectOrder('${o.orderId}')">✕ Reject</button>
+          ` : ''}
+          ${o.status === 'accepted' ? `<div class="done-msg accepted">✅ Order Accepted</div>` : ''}
+          ${o.status === 'rejected' ? `<div class="done-msg rejected">❌ Order Rejected</div>` : ''}
+        </div>
+      </div>`).join('');
+  }
+
+  // ── ACTIONS ───────────────────────────────────────────────
+  async function acceptOrder(orderId, phone, name, items, total) {
+    if (!confirm('Accept this order?')) return;
+    try {
+      await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'updateOrderStatus', orderId, status:'accepted'})});
+      sendWhatsApp(phone, name, orderId, items, total);
+      setTimeout(() => loadOrders(true), 500);
+    } catch(e) { console.error(e); alert('Error accepting order.'); }
+  }
+
+  async function rejectOrder(orderId) {
+    if (!confirm('Reject this order?')) return;
+    try {
+      await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'updateOrderStatus', orderId, status:'rejected'})});
+      setTimeout(() => loadOrders(true), 500);
+    } catch(e) { console.error(e); alert('Error rejecting order.'); }
+  }
+
+  async function approveOrder(orderId) {
+    if (!confirm('Approve this order? It will move to the pending queue.')) return;
+    try {
+      await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'approveOrder', orderId})});
+      alert('✅ Order approved!');
+      setTimeout(() => loadOrders(true), 500);
+    } catch(e) { console.error(e); alert('Error approving order.'); }
+  }
+
+  async function rejectApproval(orderId) {
+    if (!confirm('Reject this order?')) return;
+    try {
+      await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'rejectPendingOrder', orderId})});
+      setTimeout(() => loadOrders(true), 500);
+    } catch(e) { console.error(e); }
+  }
+
+  async function blockPhone(phone) {
+    if (!confirm(`Block ${phone}?`)) return;
+    const reason = prompt('Reason:') || 'Spam';
+    try {
+      await fetch(SHEET_URL, {method:'POST', body: JSON.stringify({action:'blockPhone', phone, reason})});
+      alert(`✅ ${phone} blocked.`);
+      setTimeout(() => loadOrders(true), 500);
+    } catch(e) { console.error(e); }
+  }
+
+  // ── WHATSAPP ──────────────────────────────────────────────
+  function sendWhatsApp(phone, name, orderId, items, total) {
+    const msg = `🎉 Order Confirmed!\n\n${RESTAURANT_NAME}\n\nHi ${name},\n\nYour order has been accepted!\nOrder ID: ${orderId}\n\nItems:\n${items}\n\nTotal: ₹${total}\n\nYour food will be ready in 15-20 minutes.\n\nThank you! 🍽️`;
+    window.open(`https://wa.me/${phone}?text=${encodeURIComponent(msg)}`, '_blank');
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────
+  function parseDate(ts) {
+    if (!ts) return new Date(0);
+    const p = ts.split(',')[0].trim().split('/');
+    const d = new Date(`${p[2]}-${String(p[1]).padStart(2,'0')}-${String(p[0]).padStart(2,'0')}`);
+    d.setHours(0,0,0,0); return d;
+  }
+  function isSameDay(d1,d2){return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate();}
+  function formatDate(d){const t=new Date();t.setHours(0,0,0,0);const y=new Date(t);y.setDate(y.getDate()-1);if(isSameDay(d,t))return'Today';if(isSameDay(d,y))return'Yesterday';return d.toLocaleDateString('en-IN',{weekday:'long',year:'numeric',month:'long',day:'numeric'});}
+  function formatShort(d){return d.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});}
+  function getBadgeType(d){const t=new Date();t.setHours(0,0,0,0);const y=new Date(t);y.setDate(y.getDate()-1);if(isSameDay(d,t))return'today';if(isSameDay(d,y))return'yesterday';return'archive';}
+
+  // ── AUTO REFRESH ──────────────────────────────────────────
+  function startAutoRefresh() {
+    autoRefreshInterval = setInterval(() => { if (currentRange==='today') loadOrders(true); }, 3000);
+  }
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) clearInterval(autoRefreshInterval);
+    else if (document.getElementById('dashboard').style.display!=='none') startAutoRefresh();
+  });
+</script>
+</body>
+</html>
