@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hunger Up - Analytics</title>
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
+  <style>
+    * { margin:0; padding:0; box-sizing:border-box; }
+    :root {
+      --bg:#0a0805; --surface:#1a1612; --card:#2a2520;
+      --gold:#F5C518; --cream:#f7f0e6; --muted:#a89e91;
+      --border:rgba(247,240,230,0.12);
+      --green:#5aaf7a; --red:#e85d5d; --orange:#e8844a;
+    }
+    body { font-family:'Segoe UI',system-ui,sans-serif; background:var(--bg); color:var(--cream); min-height:100vh; }
+
+    /* LOGIN */
+    .login-screen { display:flex; align-items:center; justify-content:center; min-height:100vh; }
+    .login-box { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:40px; width:100%; max-width:380px; text-align:center; margin:20px; }
+    .login-logo { font-size:36px; font-weight:700; color:var(--gold); margin-bottom:4px; }
+    .login-sub { font-size:12px; color:var(--muted); text-transform:uppercase; letter-spacing:2px; margin-bottom:6px; }
+    .login-label { font-size:13px; color:var(--muted); margin-bottom:24px; }
+    .login-input { width:100%; background:var(--card); border:1px solid var(--border); color:var(--cream); padding:14px; border-radius:12px; font-size:22px; text-align:center; letter-spacing:8px; margin-bottom:14px; font-family:'Courier New',monospace; }
+    .login-input:focus { outline:none; border-color:var(--gold); }
+    .login-btn { width:100%; background:var(--gold); color:var(--bg); border:none; padding:14px; border-radius:12px; font-size:15px; font-weight:700; cursor:pointer; transition:all .2s; }
+    .login-btn:hover { transform:translateY(-2px); box-shadow:0 4px 16px rgba(245,197,24,.4); }
+    .login-err { color:var(--red); font-size:13px; margin-top:10px; display:none; }
+    .login-err.show { display:block; }
+
+    /* MAIN */
+    .main { display:none; padding:20px; max-width:1200px; margin:0 auto; }
+
+    .header { display:flex; justify-content:space-between; align-items:center; padding:20px 0 30px; border-bottom:1px solid var(--border); margin-bottom:28px; }
+    .header-left .logo { font-size:28px; font-weight:700; color:var(--gold); }
+    .header-left .sub { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:2px; margin-top:2px; }
+    .header-right { display:flex; gap:10px; align-items:center; }
+    .range-btn { padding:8px 14px; border-radius:100px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:12px; font-weight:600; cursor:pointer; transition:all .2s; }
+    .range-btn.active { background:var(--gold); color:var(--bg); border-color:var(--gold); }
+    .refresh-btn { padding:8px 16px; background:var(--card); border:1px solid var(--border); color:var(--gold); border-radius:8px; cursor:pointer; font-size:13px; font-weight:600; }
+
+    /* STATS GRID */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px; margin-bottom:24px; }
+    .stat-card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:22px; transition:all .2s; }
+    .stat-card:hover { border-color:var(--gold); transform:translateY(-2px); }
+    .stat-label { font-size:11px; color:var(--muted); text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; }
+    .stat-value { font-size:34px; font-weight:700; color:var(--gold); }
+    .stat-change { font-size:12px; margin-top:6px; }
+    .up { color:var(--green); } .down { color:var(--red); } .neutral { color:var(--muted); }
+
+    /* SECTION */
+    .section { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:24px; margin-bottom:20px; }
+    .section-title { font-size:18px; font-weight:700; margin-bottom:20px; display:flex; align-items:center; gap:8px; }
+
+    /* BAR CHART */
+    .bar-chart { height:180px; display:flex; align-items:flex-end; gap:8px; margin-top:16px; }
+    .bar-col { flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; }
+    .bar { width:100%; background:linear-gradient(180deg,var(--gold),var(--orange)); border-radius:6px 6px 0 0; position:relative; transition:all .3s; min-height:4px; }
+    .bar:hover { filter:brightness(1.2); }
+    .bar-val { position:absolute; top:-20px; left:50%; transform:translateX(-50%); font-size:11px; font-weight:600; color:var(--gold); white-space:nowrap; }
+    .bar-lbl { font-size:10px; color:var(--muted); white-space:nowrap; }
+
+    /* ITEM ROWS */
+    .item-row { display:flex; justify-content:space-between; align-items:center; padding:14px 0; border-bottom:1px solid var(--border); }
+    .item-row:last-child { border-bottom:none; }
+    .item-left { display:flex; align-items:center; gap:12px; }
+    .item-rank { width:30px; height:30px; border-radius:8px; background:var(--card); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; color:var(--gold); flex-shrink:0; }
+    .item-rank.gold { background:var(--gold); color:var(--bg); }
+    .item-name { font-size:15px; font-weight:500; }
+    .item-right { text-align:right; }
+    .item-orders { font-size:17px; font-weight:600; color:var(--gold); }
+    .item-rev { font-size:12px; color:var(--muted); margin-top:2px; }
+
+    /* CUSTOMER CARDS */
+    .customer-card { background:var(--card); border-radius:10px; padding:16px; margin-bottom:10px; display:flex; justify-content:space-between; align-items:center; }
+    .cust-left { display:flex; align-items:center; gap:12px; }
+    .cust-avatar { width:44px; height:44px; border-radius:50%; background:linear-gradient(135deg,var(--gold),var(--orange)); display:flex; align-items:center; justify-content:center; font-size:18px; font-weight:700; color:var(--bg); flex-shrink:0; }
+    .cust-name { font-size:15px; font-weight:600; }
+    .cust-phone { font-size:12px; color:var(--muted); margin-top:2px; }
+    .cust-right { text-align:right; }
+    .cust-orders { font-size:12px; color:var(--muted); }
+    .cust-spent { font-size:17px; font-weight:600; color:var(--gold); margin-top:2px; }
+
+    /* TABS */
+    .tab-bar { display:flex; gap:8px; margin-bottom:20px; border-bottom:1px solid var(--border); }
+    .tab { padding:10px 18px; background:transparent; border:none; color:var(--muted); cursor:pointer; font-size:13px; font-weight:600; border-bottom:2px solid transparent; transition:all .2s; }
+    .tab.active { color:var(--gold); border-bottom-color:var(--gold); }
+
+    /* EXPORT BTN */
+    .export-btn { padding:8px 16px; background:rgba(245,197,24,.15); border:1px solid rgba(245,197,24,.3); color:var(--gold); border-radius:8px; cursor:pointer; font-size:12px; font-weight:600; transition:all .2s; }
+    .export-btn:hover { background:var(--gold); color:var(--bg); }
+
+    /* SUGGESTION BOX */
+    .suggestion { padding:14px 16px; border-radius:10px; margin-top:16px; }
+    .suggestion.gold { background:rgba(245,197,24,.08); border:1px solid rgba(245,197,24,.2); }
+    .suggestion.green { background:rgba(90,175,122,.08); border:1px solid rgba(90,175,122,.2); }
+    .suggestion.red { background:rgba(232,93,93,.08); border:1px solid rgba(232,93,93,.2); }
+    .sug-title { font-size:13px; font-weight:700; margin-bottom:6px; }
+    .sug-title.gold { color:var(--gold); } .sug-title.green { color:var(--green); } .sug-title.red { color:var(--red); }
+    .sug-text { font-size:13px; color:var(--cream); line-height:1.6; }
+
+    /* TABLE */
+    .data-table { width:100%; border-collapse:collapse; font-size:13px; }
+    .data-table th { padding:10px 12px; text-align:left; color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.5px; border-bottom:1px solid var(--border); }
+    .data-table td { padding:10px 12px; border-bottom:1px solid rgba(247,240,230,0.06); }
+    .data-table tr:last-child td { border-bottom:none; }
+    .data-table tr:hover td { background:rgba(245,197,24,.04); }
+
+    /* BADGE */
+    .badge { display:inline-block; padding:3px 8px; border-radius:6px; font-size:11px; font-weight:600; text-transform:uppercase; }
+    .badge-vip { background:rgba(245,197,24,.2); color:var(--gold); }
+    .badge-reg { background:rgba(90,175,122,.2); color:var(--green); }
+    .badge-one { background:rgba(168,158,145,.15); color:var(--muted); }
+
+    .loading-state { text-align:center; padding:60px; color:var(--muted); }
+    .spinner { width:36px; height:36px; border:3px solid var(--border); border-top-color:var(--gold); border-radius:50%; animation:spin 1s linear infinite; margin:0 auto 12px; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    @media(max-width:768px) {
+      .stats-grid { grid-template-columns:1fr 1fr; }
+      .header-right { flex-wrap:wrap; }
+      .bar-chart { gap:4px; }
+      .bar-lbl { font-size:9px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">Hunger Up</div>
+    <div class="login-sub">Food Court & Dhaba</div>
+    <div class="login-label">Analytics Dashboard — Enter PIN</div>
+    <input type="password" class="login-input" id="pinInput" placeholder="••••" maxlength="4" inputmode="numeric" onkeydown="if(event.key==='Enter') doLogin()">
+    <button class="login-btn" onclick="doLogin()">View Analytics</button>
+    <div class="login-err" id="loginErr">Incorrect PIN</div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main" id="main">
+
+  <div class="header">
+    <div class="header-left">
+      <div class="logo">Hunger Up</div>
+      <div class="sub">Analytics Dashboard</div>
+    </div>
+    <div class="header-right">
+      <button class="range-btn active" onclick="setRange('today',this)">Today</button>
+      <button class="range-btn" onclick="setRange('week',this)">7 Days</button>
+      <button class="range-btn" onclick="setRange('month',this)">30 Days</button>
+      <button class="refresh-btn" onclick="loadData()">🔄 Refresh</button>
+    </div>
+  </div>
+
+  <div id="loadingState" class="loading-state"><div class="spinner"></div><div>Loading analytics...</div></div>
+
+  <div id="analyticsContent" style="display:none;">
+
+    <!-- KEY METRICS -->
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <!-- HOURLY CHART -->
+    <div class="section">
+      <div class="section-title">📊 Orders by Hour</div>
+      <div class="bar-chart" id="hourlyChart"></div>
+    </div>
+
+    <!-- BEST SELLERS + SLOW MOVERS -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px;" id="itemsGrid">
+      <div class="section">
+        <div class="section-title">🏆 Best Selling Items</div>
+        <div id="bestSellers"></div>
+      </div>
+      <div class="section">
+        <div class="section-title">⚠️ Slow Moving Items</div>
+        <div id="slowMovers"></div>
+      </div>
+    </div>
+
+    <!-- TABLE WISE -->
+    <div class="section">
+      <div class="section-title">🪑 Table Performance</div>
+      <div id="tableStats"></div>
+    </div>
+
+    <!-- CUSTOMER ANALYTICS -->
+    <div class="section">
+      <div class="section-title" style="justify-content:space-between;">
+        <span>👥 Customer Analytics</span>
+        <button class="export-btn" onclick="exportAllCustomers()">📥 Export All</button>
+      </div>
+      <div class="tab-bar">
+        <button class="tab active" onclick="showCustTab('vip',this)">💎 VIP</button>
+        <button class="tab" onclick="showCustTab('regular',this)">⭐ Regular</button>
+        <button class="tab" onclick="showCustTab('onetime',this)">👤 One-Time</button>
+      </div>
+      <div id="custTabContent"></div>
+    </div>
+
+    <!-- REVENUE SUMMARY -->
+    <div class="section">
+      <div class="section-title">💰 Revenue Summary</div>
+      <div id="revSummary"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const SHEET_URL = 'https://script.google.com/macros/s/AKfycbzy2ckG31u9P1iwl0O1c0WQ6gz2_1dDWUHEw3b7Q59PCXlRMTlqz4ifjjSmufjbd-f1QQ/exec';
+  const PIN_CODE = '1234';
+  let allOrders = [];
+  let currentRange = 'today';
+  let customerData = { vip:[], regular:[], onetime:[] };
+
+  function doLogin() {
+    const pin = document.getElementById('pinInput').value;
+    if (pin === PIN_CODE) {
+      document.getElementById('loginScreen').style.display = 'none';
+      document.getElementById('main').style.display = 'block';
+      loadData();
+    } else {
+      document.getElementById('loginErr').classList.add('show');
+      document.getElementById('pinInput').value = '';
+    }
+  }
+
+  function setRange(range, btn) {
+    currentRange = range;
+    document.querySelectorAll('.range-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    renderAll();
+  }
+
+  async function loadData() {
+    document.getElementById('loadingState').style.display = 'block';
+    document.getElementById('analyticsContent').style.display = 'none';
+    try {
+      const resp = await fetch(SHEET_URL);
+      const data = await resp.json();
+      if (data.result === 'success' && data.data) {
+        allOrders = data.data.slice(1).map(row => ({
+          orderId: row[0]||'', name: row[1]||'', phone: row[2]||'',
+          table: row[3]||'', items: row[4]||'', total: parseFloat(row[5])||0,
+          time: row[6]||'', status: row[7]||'pending'
+        })).filter(o => o.orderId && o.status !== 'rejected');
+        renderAll();
+      }
+    } catch(e) { console.error(e); }
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('analyticsContent').style.display = 'block';
+  }
+
+  function getFilteredOrders() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const week = new Date(today); week.setDate(week.getDate()-6);
+    const month = new Date(today); month.setDate(month.getDate()-29);
+    return allOrders.filter(o => {
+      const d = parseDate(o.time);
+      if (currentRange === 'today') return isSameDay(d, today);
+      if (currentRange === 'week') return d >= week;
+      if (currentRange === 'month') return d >= month;
+      return true;
+    });
+  }
+
+  function renderAll() {
+    const orders = getFilteredOrders();
+    renderStats(orders);
+    renderHourly(orders);
+    renderItems(orders);
+    renderTables(orders);
+    buildCustomers(orders);
+    renderRevSummary(orders);
+    showCustTabData('vip');
+  }
+
+  // ── STATS ─────────────────────────────────────────────────
+  function renderStats(orders) {
+    const total = orders.reduce((s,o) => s + o.total, 0);
+    const avg = orders.length ? Math.round(total / orders.length) : 0;
+    const hours = {};
+    orders.forEach(o => {
+      const h = parseInt((o.time.split(', ')[1]||'0:0').split(':')[0]);
+      hours[h] = (hours[h]||0) + 1;
+    });
+    const peakH = Object.keys(hours).sort((a,b) => hours[b]-hours[a])[0];
+    const peakLabel = peakH ? (parseInt(peakH) < 12 ? peakH+' AM' : (parseInt(peakH)-12||12)+' PM') : 'N/A';
+
+    // Compare with previous period
+    const prevOrders = getPrevOrders();
+    const prevTotal = prevOrders.reduce((s,o) => s + o.total, 0);
+    const ordChange = prevOrders.length ? Math.round((orders.length - prevOrders.length)/prevOrders.length*100) : 0;
+    const revChange = prevTotal ? Math.round((total - prevTotal)/prevTotal*100) : 0;
+
+    document.getElementById('statsGrid').innerHTML = [
+      { label: currentRange==='today'?'Today\'s Orders':currentRange==='week'?'7-Day Orders':'30-Day Orders',
+        value: orders.length, change: ordChange, suffix: '% vs prev period' },
+      { label: currentRange==='today'?'Today\'s Revenue':currentRange==='week'?'7-Day Revenue':'30-Day Revenue',
+        value: '₹'+total.toLocaleString(), change: revChange, suffix: '% vs prev period' },
+      { label: 'Avg Order Value', value: '₹'+avg, change: null, suffix: '' },
+      { label: 'Peak Hour', value: peakLabel, change: null, suffix: hours[peakH] ? (hours[peakH]+' orders') : '' }
+    ].map(s => `
+      <div class="stat-card">
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-value">${s.value}</div>
+        <div class="stat-change ${s.change > 0 ? 'up' : s.change < 0 ? 'down' : 'neutral'}">
+          ${s.change !== null ? (s.change >= 0 ? '↑' : '↓') + ' ' + Math.abs(s.change) + s.suffix : s.suffix}
+        </div>
+      </div>`).join('');
+  }
+
+  function getPrevOrders() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const days = currentRange === 'today' ? 1 : currentRange === 'week' ? 7 : 30;
+    const start = new Date(today); start.setDate(start.getDate() - days*2);
+    const end = new Date(today); end.setDate(end.getDate() - days);
+    return allOrders.filter(o => { const d = parseDate(o.time); return d >= start && d < end; });
+  }
+
+  // ── HOURLY CHART ──────────────────────────────────────────
+  function renderHourly(orders) {
+    const hours = {};
+    for(let h=8; h<=22; h++) hours[h] = 0;
+    orders.forEach(o => {
+      const h = parseInt((o.time.split(', ')[1]||'0:0').split(':')[0]);
+      if (h >= 8 && h <= 22) hours[h]++;
+    });
+    const max = Math.max(...Object.values(hours), 1);
+    document.getElementById('hourlyChart').innerHTML = Object.keys(hours).map(h => {
+      const count = hours[h];
+      const pct = Math.round((count/max)*100);
+      const label = parseInt(h) < 12 ? h+' AM' : (parseInt(h)-12||12)+' PM';
+      return `<div class="bar-col">
+        <div class="bar" style="height:${Math.max(pct,2)}%">
+          ${count > 0 ? '<div class="bar-val">'+count+'</div>' : ''}
+        </div>
+        <div class="bar-lbl">${label}</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── ITEMS ─────────────────────────────────────────────────
+  function renderItems(orders) {
+    const itemMap = {};
+    orders.forEach(o => {
+      const parts = o.items.split(', ');
+      parts.forEach(part => {
+        const match = part.match(/^(.+)\s+x(\d+)$/);
+        const name = match ? match[1].replace(/\s*\([^)]*\)/,'').trim() : part.trim();
+        const qty = match ? parseInt(match[2]) : 1;
+        if (!itemMap[name]) itemMap[name] = { qty:0, revenue:0 };
+        itemMap[name].qty += qty;
+        itemMap[name].revenue += o.total / (parts.length || 1);
+      });
+    });
+
+    const sorted = Object.entries(itemMap).sort((a,b) => b[1].qty - a[1].qty);
+    const top5 = sorted.slice(0, 5);
+    const bottom5 = sorted.slice(-5).reverse();
+
+    document.getElementById('bestSellers').innerHTML = top5.length ? top5.map((item,i) => `
+      <div class="item-row">
+        <div class="item-left">
+          <div class="item-rank ${i===0?'gold':''}">${i+1}</div>
+          <div class="item-name">${item[0]}</div>
+        </div>
+        <div class="item-right">
+          <div class="item-orders">${item[1].qty} orders</div>
+          <div class="item-rev">₹${Math.round(item[1].revenue)} revenue</div>
+        </div>
+      </div>`).join('') : '<div style="color:var(--muted);text-align:center;padding:20px">No data yet</div>';
+
+    document.getElementById('slowMovers').innerHTML = bottom5.length ? bottom5.map(item => `
+      <div class="item-row">
+        <div class="item-left">
+          <div class="item-name">${item[0]}</div>
+          <span class="badge" style="background:rgba(232,93,93,.15);color:var(--red);margin-left:8px">Only ${item[1].qty}</span>
+        </div>
+        <div class="item-right">
+          <div class="item-rev" style="color:var(--red)">₹${Math.round(item[1].revenue)}</div>
+        </div>
+      </div>`).join('') + `
+      <div class="suggestion gold">
+        <div class="sug-title gold">💡 Tip</div>
+        <div class="sug-text">Consider promoting slow-moving items with a combo offer or discount banner.</div>
+      </div>` : '<div style="color:var(--muted);text-align:center;padding:20px">No data yet</div>';
+  }
+
+  // ── TABLES ────────────────────────────────────────────────
+  function renderTables(orders) {
+    const tableMap = {};
+    orders.forEach(o => {
+      const t = o.table || 'Unknown';
+      if (!tableMap[t]) tableMap[t] = { orders:0, revenue:0 };
+      tableMap[t].orders++;
+      tableMap[t].revenue += o.total;
+    });
+    const sorted = Object.entries(tableMap).sort((a,b) => b[1].revenue - a[1].revenue);
+    if (!sorted.length) { document.getElementById('tableStats').innerHTML = '<div style="color:var(--muted);text-align:center;padding:20px">No data yet</div>'; return; }
+    document.getElementById('tableStats').innerHTML = `
+      <table class="data-table">
+        <thead><tr><th>Table</th><th>Orders</th><th>Revenue</th><th>Avg Order</th></tr></thead>
+        <tbody>${sorted.map(([table, d]) => `
+          <tr>
+            <td>🪑 Table ${table}</td>
+            <td>${d.orders}</td>
+            <td style="color:var(--gold)">₹${d.revenue.toLocaleString()}</td>
+            <td>₹${Math.round(d.revenue/d.orders)}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>`;
+  }
+
+  // ── CUSTOMERS ────────────────────────────────────────────
+  function buildCustomers(orders) {
+    const phoneMap = {};
+    orders.forEach(o => {
+      if (!o.phone) return;
+      if (!phoneMap[o.phone]) phoneMap[o.phone] = { name:o.name, phone:o.phone, orders:0, spent:0, lastOrder:o.time };
+      phoneMap[o.phone].orders++;
+      phoneMap[o.phone].spent += o.total;
+      if (o.time > phoneMap[o.phone].lastOrder) phoneMap[o.phone].lastOrder = o.time;
+    });
+    const customers = Object.values(phoneMap).sort((a,b) => b.spent - a.spent);
+    customerData.vip = customers.filter(c => c.orders >= 5);
+    customerData.regular = customers.filter(c => c.orders >= 2 && c.orders < 5);
+    customerData.onetime = customers.filter(c => c.orders === 1);
+  }
+
+  function showCustTab(tab, btn) {
+    document.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
+    if(btn) btn.classList.add('active');
+    showCustTabData(tab);
+  }
+
+  function showCustTabData(tab) {
+    const data = customerData[tab];
+    const exportLabel = { vip:'VIP', regular:'Regular', onetime:'One-Time' }[tab];
+    if (!data || !data.length) {
+      document.getElementById('custTabContent').innerHTML = `<div style="color:var(--muted);text-align:center;padding:40px">No ${exportLabel} customers yet</div>`;
+      return;
+    }
+    document.getElementById('custTabContent').innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <div style="font-size:13px;color:var(--muted)">${data.length} customers</div>
+        <button class="export-btn" onclick="exportCustomers('${tab}')">📥 Export ${exportLabel}</button>
+      </div>` +
+      data.slice(0,10).map(c => `
+        <div class="customer-card">
+          <div class="cust-left">
+            <div class="cust-avatar">${c.name.charAt(0).toUpperCase()}</div>
+            <div>
+              <div class="cust-name">${c.name}</div>
+              <div class="cust-phone">📱 ${c.phone}</div>
+            </div>
+          </div>
+          <div class="cust-right">
+            <div class="cust-orders">${c.orders} order${c.orders>1?'s':''}</div>
+            <div class="cust-spent">₹${c.spent.toLocaleString()}</div>
+          </div>
+        </div>`).join('') +
+      (data.length > 10 ? `<div style="text-align:center;color:var(--muted);font-size:13px;padding:10px">+${data.length-10} more — export to see all</div>` : '') +
+      getSuggestion(tab, data);
+  }
+
+  function getSuggestion(tab, data) {
+    if (tab === 'vip' && data.length)
+      return `<div class="suggestion gold"><div class="sug-title gold">💎 VIP Tip</div><div class="sug-text">You have ${data.length} VIP customers. Send them a WhatsApp message: "Thank you for being our VIP! Here's 10% off — code VIP10"</div></div>`;
+    if (tab === 'regular' && data.length)
+      return `<div class="suggestion green"><div class="sug-title green">⭐ Regular Tip</div><div class="sug-text">${data.length} regular customers. Push them to VIP with: "You're almost VIP! One more order gets you 10% off always — code REG5"</div></div>`;
+    if (tab === 'onetime' && data.length) {
+      const potential = Math.round(data.length * 0.2);
+      return `<div class="suggestion red"><div class="sug-title red">💡 Win-Back</div><div class="sug-text">${data.length} customers ordered once and haven't returned. If 20% come back → +${potential} customers → +₹${(potential*350).toLocaleString()}/month.<br><br>Message: "We miss you! Come back for 15% off — code COMEBACK15"</div></div>`;
+    }
+    return '';
+  }
+
+  // ── REVENUE SUMMARY ───────────────────────────────────────
+  function renderRevSummary(orders) {
+    const total = orders.reduce((s,o) => s + o.total, 0);
+    const days = currentRange === 'today' ? 1 : currentRange === 'week' ? 7 : 30;
+    const avgPerDay = days > 0 ? Math.round(total/days) : total;
+    const projected = Math.round(avgPerDay * 30);
+    document.getElementById('revSummary').innerHTML = `
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;">
+        <div style="background:var(--card);border-radius:10px;padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Period Revenue</div>
+          <div style="font-size:28px;font-weight:700;color:var(--gold)">₹${total.toLocaleString()}</div>
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Daily Average</div>
+          <div style="font-size:28px;font-weight:700;color:var(--gold)">₹${avgPerDay.toLocaleString()}</div>
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Projected Monthly</div>
+          <div style="font-size:28px;font-weight:700;color:var(--green)">₹${projected.toLocaleString()}</div>
+        </div>
+        <div style="background:var(--card);border-radius:10px;padding:20px;text-align:center;">
+          <div style="font-size:12px;color:var(--muted);text-transform:uppercase;margin-bottom:6px">Total Customers</div>
+          <div style="font-size:28px;font-weight:700;color:var(--gold)">${new Set(orders.map(o=>o.phone)).size}</div>
+        </div>
+      </div>`;
+  }
+
+  // ── EXPORT ────────────────────────────────────────────────
+  function exportCustomers(tab) {
+    const data = customerData[tab];
+    const labels = { vip:'VIP', regular:'Regular', onetime:'One-Time' };
+    const headers = ['Name','Phone','Total Orders','Total Spent','Avg Order'];
+    const rows = [headers, ...data.map(c => [c.name, c.phone, c.orders, '₹'+c.spent, '₹'+Math.round(c.spent/c.orders)])];
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(rows);
+    ws['!cols'] = [{wch:20},{wch:14},{wch:12},{wch:12},{wch:12}];
+    XLSX.utils.book_append_sheet(wb, ws, labels[tab]);
+    XLSX.writeFile(wb, 'HungerUp-'+labels[tab]+'-Customers.xlsx');
+  }
+
+  function exportAllCustomers() {
+    const wb = XLSX.utils.book_new();
+    ['vip','regular','onetime'].forEach(tab => {
+      const data = customerData[tab];
+      if (!data.length) return;
+      const labels = { vip:'VIP', regular:'Regular', onetime:'One-Time' };
+      const rows = [['Name','Phone','Orders','Spent'], ...data.map(c => [c.name, c.phone, c.orders, '₹'+c.spent])];
+      const ws = XLSX.utils.aoa_to_sheet(rows);
+      ws['!cols'] = [{wch:20},{wch:14},{wch:10},{wch:12}];
+      XLSX.utils.book_append_sheet(wb, ws, labels[tab]);
+    });
+    XLSX.writeFile(wb, 'HungerUp-All-Customers.xlsx');
+    alert('✅ Downloaded! Contains VIP, Regular, and One-Time customer sheets.');
+  }
+
+  // ── HELPERS ───────────────────────────────────────────────
+  function parseDate(ts) {
+    if (!ts) return new Date(0);
+    try {
+      const parts = ts.split(', ');
+      const d = parts[0].trim().split('/');
+      const t = parts[1] ? parts[1].split(':') : [0,0,0];
+      const dt = new Date(parseInt(d[2]), parseInt(d[1])-1, parseInt(d[0]), parseInt(t[0]), parseInt(t[1]), parseInt(t[2]));
+      dt.setHours(0,0,0,0); return dt;
+    } catch(e) { return new Date(0); }
+  }
+  function isSameDay(d1,d2) { return d1.getFullYear()===d2.getFullYear()&&d1.getMonth()===d2.getMonth()&&d1.getDate()===d2.getDate(); }
+</script>
+</body>
+</html>
