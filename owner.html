@@ -568,7 +568,7 @@
 
   // ── AUTO REFRESH ──────────────────────────────────────────
   function startAutoRefresh() {
-    autoRefreshInterval = setInterval(() => { if (currentRange==='today') loadOrders(true); }, 3000);
+    autoRefreshInterval = setInterval(() => { loadOrders(true); }, 3000);
   }
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) clearInterval(autoRefreshInterval);
